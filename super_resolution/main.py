@@ -3,6 +3,10 @@ import argparse
 from math import log10
 
 import torch
+
+# Import Habana torch library
+import habana_frameworks.torch.core as htcore
+
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
@@ -37,7 +41,7 @@ if opt.cuda:
 elif use_mps:
     device = torch.device("mps")
 else:
-    device = torch.device("cpu")
+    device = torch.device("hpu")
 
 print('===> Loading datasets')
 train_set = get_training_set(opt.upscale_factor)
@@ -61,7 +65,11 @@ def train(epoch):
         loss = criterion(model(input), target)
         epoch_loss += loss.item()
         loss.backward()
+
+        htcore.mark_step()
+
         optimizer.step()
+        htcore.mark_step()
 
         print("===> Epoch[{}]({}/{}): Loss: {:.4f}".format(epoch, iteration, len(training_data_loader), loss.item()))
 
